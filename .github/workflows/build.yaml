@@ -1,0 +1,113 @@
+name: Build and Push Image
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Dockerfile'
+      - 'config/**'
+      - '.github/workflows/build.yaml'
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'Dockerfile'
+      - 'config/**'
+  workflow_dispatch:
+    inputs:
+      release:
+        description: 'Create a CalVer release tag (YYYY.MM.patch)'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate CalVer tag
+        id: calver
+        if: github.event_name != 'pull_request' && (github.event.inputs.release == 'true' || startsWith(github.ref, 'refs/tags/v'))
+        run: |
+          YEAR_MONTH=$(date +%Y.%m)
+          # Find existing tags for this month and increment patch
+          EXISTING=$(git tag -l "${YEAR_MONTH}.*" | sort -V | tail -1)
+          if [[ -z "$EXISTING" ]]; then
+            PATCH=0
+          else
+            PATCH=$(echo "$EXISTING" | cut -d. -f3)
+            PATCH=$((PATCH + 1))
+          fi
+          CALVER="${YEAR_MONTH}.${PATCH}"
+          echo "tag=${CALVER}" >> $GITHUB_OUTPUT
+          echo "Generated CalVer: ${CALVER}"
+
+      - name: Create CalVer git tag
+        if: steps.calver.outputs.tag && github.event.inputs.release == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ steps.calver.outputs.tag }}" -m "Release ${{ steps.calver.outputs.tag }}"
+          git push origin "${{ steps.calver.outputs.tag }}"
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            # latest on main branch
+            type=raw,value=latest,enable={{is_default_branch}}
+            # sha-<short> on every commit
+            type=sha,prefix=sha-,format=short
+            # CalVer tag if releasing
+            type=raw,value=${{ steps.calver.outputs.tag }},enable=${{ steps.calver.outputs.tag != '' }}
+            # PR number
+            type=ref,event=pr
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Create GitHub Release
+        if: steps.calver.outputs.tag && github.event.inputs.release == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.calver.outputs.tag }}
+          name: ${{ steps.calver.outputs.tag }}
+          generate_release_notes: true

@@ -1,0 +1,149 @@
+# ~/.bashrc for hermes toolbox
+
+# If not running interactively, don't do anything
+case $- in
+    *i*) ;;
+      *) return;;
+esac
+
+# History (legacy - atuin takes over but keep as fallback)
+HISTCONTROL=ignoreboth
+HISTSIZE=10000
+HISTFILESIZE=20000
+shopt -s histappend
+
+# Check window size after each command
+shopt -s checkwinsize
+
+# Enable color support
+alias ls='ls --color=auto'
+alias grep='grep --color=auto'
+
+# Useful aliases
+alias ll='ls -alF'
+alias la='ls -A'
+alias l='ls -CF'
+alias k='kubectl'
+alias kgp='kubectl get pods'
+alias kgs='kubectl get svc'
+alias kga='kubectl get all'
+alias kns='kubens'
+alias kctx='kubectx'
+alias watch='watch '
+
+# kubectl completion
+source <(kubectl completion bash)
+complete -F __start_kubectl k
+
+# helm completion
+source <(helm completion bash)
+
+# flux completion
+source <(flux completion bash)
+
+# k9s completion
+source <(k9s completion bash)
+
+# stern completion
+source <(stern --completion bash)
+
+# Prompt - shows namespace if KUBECONFIG context is set
+__kube_ps1() {
+    local ctx ns
+    ctx=$(kubectl config current-context 2>/dev/null)
+    if [[ -n "$ctx" ]]; then
+        ns=$(kubectl config view --minify -o jsonpath='{..namespace}' 2>/dev/null)
+        ns=${ns:-default}
+        echo " [${ctx}:${ns}]"
+    fi
+}
+PS1='\[\033[01;32m\]hermes\[\033[00m\]$(__kube_ps1):\[\033[01;34m\]\w\[\033[00m\]\$ '
+
+# FZF
+[ -f /usr/share/doc/fzf/examples/key-bindings.bash ] && source /usr/share/doc/fzf/examples/key-bindings.bash
+
+# ============================================================================
+# ATUIN - Shell History Sync
+# ============================================================================
+if command -v atuin &> /dev/null; then
+    if [[ -f "$HOME/.config/atuin/config.toml" ]]; then
+        eval "$(atuin init bash)"
+    else
+        echo "Atuin not configured. Run 'atuin-setup' to configure."
+    fi
+fi
+
+# Helper function to setup atuin on first run
+atuin-setup() {
+    local server="${1:-http://mnemosyne.toolbox.svc.cluster.local:8888}"
+
+    mkdir -p ~/.config/atuin
+    cat > ~/.config/atuin/config.toml << EOF
+## Atuin Configuration
+## See: https://docs.atuin.sh/configuration/config/
+
+# Sync server address
+sync_address = "${server}"
+
+# Sync frequency
+sync_frequency = "5m"
+
+# Search mode: prefix, fulltext, fuzzy, skim
+search_mode = "fuzzy"
+
+# Filter mode: global, host, session, directory
+filter_mode = "global"
+
+# Style: auto, full, compact
+style = "compact"
+
+# Show help in UI
+show_help = true
+
+# Exit on Esc
+exit_mode = "return-original"
+
+# Store on enter (even if command fails)
+enter_accept = true
+EOF
+
+    echo "Atuin config written to ~/.config/atuin/config.toml"
+    echo ""
+    echo "Now register or login:"
+    echo "  New account:  atuin register -u <username> -e <email>"
+    echo "  Existing:     atuin login -u <username>"
+    echo ""
+    echo "Then restart your shell or run: eval \"\$(atuin init bash)\""
+}
+
+# ============================================================================
+# Claude Code convenience
+# ============================================================================
+alias cc='claude'
+alias ccc='claude --continue'
+
+# ============================================================================
+# Kubernetes helpers
+# ============================================================================
+
+# Quick pod logs
+klog() {
+    kubectl logs -f "$@"
+}
+
+# Quick exec into pod
+kexec() {
+    kubectl exec -it "$1" -- "${2:-bash}"
+}
+
+# Stern with defaults
+klogs() {
+    stern --tail 100 "$@"
+}
+
+# Get all resources in namespace
+kall() {
+    local ns="${1:-$(kubectl config view --minify -o jsonpath='{..namespace}')}"
+    ns="${ns:-default}"
+    kubectl api-resources --verbs=list --namespaced -o name | xargs -n1 kubectl get -n "$ns" --show-kind --ignore-not-found
+}
