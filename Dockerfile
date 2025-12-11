@@ -74,6 +74,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Python (for misc scripts)
     python3 \
     python3-pip \
+    # Homebrew dependencies
+    build-essential \
+    procps \
+    file \
     && rm -rf /var/lib/apt/lists/*
 
 # ============================================================================
@@ -143,19 +147,43 @@ COPY --chown=toolbox:toolbox config/tmux.conf /home/toolbox/.tmux.conf
 # Create config directories
 RUN mkdir -p /home/toolbox/.config/atuin && chown -R toolbox:toolbox /home/toolbox/.config
 
+# Create Homebrew directory with proper ownership (must be done as root)
+RUN mkdir -p /home/linuxbrew/.linuxbrew \
+    && chown -R toolbox:toolbox /home/linuxbrew
+
 # Switch to non-root user
 USER toolbox
 WORKDIR /home/toolbox
 
 # ============================================================================
+# HOMEBREW (as non-root user)
+# ============================================================================
+
+# Install Homebrew (directory already created with proper permissions)
+RUN NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Add brew to PATH for subsequent commands
+ENV PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:${PATH}"
+
+# Disable analytics
+RUN brew analytics off
+
+# ============================================================================
 # RUNTIME
 # ============================================================================
+
+# Copy entrypoint script
+COPY --chown=toolbox:toolbox config/entrypoint.sh /home/toolbox/entrypoint.sh
+RUN chmod +x /home/toolbox/entrypoint.sh
 
 EXPOSE 7681
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:7681/ || exit 1
 
-# -W: Wait for client before starting process
-# -t: Set terminal title
+# BREW_PACKAGES: space-separated list of brew packages to install at startup
+# Example: docker run -e BREW_PACKAGES="gh lazygit" hermes
+ENV BREW_PACKAGES=""
+
+ENTRYPOINT ["/home/toolbox/entrypoint.sh"]
 CMD ["ttyd", "-p", "7681", "-W", "-t", "titleFixed=HERMES", "tmux", "new-session", "-A", "-s", "main"]

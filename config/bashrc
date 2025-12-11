@@ -6,6 +6,13 @@ case $- in
       *) return;;
 esac
 
+# ============================================================================
+# HOMEBREW
+# ============================================================================
+if [[ -d "/home/linuxbrew/.linuxbrew" ]]; then
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+fi
+
 # History (legacy - atuin takes over but keep as fallback)
 HISTCONTROL=ignoreboth
 HISTSIZE=10000
