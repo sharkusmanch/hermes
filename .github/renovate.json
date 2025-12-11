@@ -1,26 +1,46 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits"
   ],
+  "schedule": [
+    "at any time"
+  ],
+  "prConcurrentLimit": 0,
+  "prHourlyLimit": 0,
+  "platformAutomerge": true,
+  "rebaseWhen": "conflicted",
   "packageRules": [
     {
       "description": "Group all hermes Dockerfile updates",
       "matchFileNames": ["Dockerfile"],
-      "groupName": "hermes dependencies",
-      "schedule": ["before 6am on monday"]
+      "groupName": "hermes dependencies"
     },
     {
       "description": "Auto-merge patch updates for CLI tools",
       "matchFileNames": ["Dockerfile"],
       "matchUpdateTypes": ["patch"],
-      "automerge": true
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "merge"
+    },
+    {
+      "description": "Auto-merge minor updates for CLI tools",
+      "matchFileNames": ["Dockerfile"],
+      "matchUpdateTypes": ["minor"],
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "merge"
     },
     {
       "description": "Group GitHub Actions updates",
       "matchManagers": ["github-actions"],
       "groupName": "github-actions",
-      "automerge": true
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "merge"
     }
   ],
   "customManagers": [
