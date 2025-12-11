@@ -78,7 +78,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     procps \
     file \
-    && rm -rf /var/lib/apt/lists/*
+    # Locale support (for Unicode/UTF-8)
+    locales \
+    && rm -rf /var/lib/apt/lists/* \
+    && sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen \
+    && locale-gen
+
+# UTF-8 locale (can be overridden at runtime)
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
 
 # ============================================================================
 # TOOL INSTALLATIONS
