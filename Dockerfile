@@ -1,6 +1,5 @@
 # syntax=docker/dockerfile:1
-# renovate: datasource=docker depName=node versioning=node
-FROM node:22.16.0-bookworm-slim
+FROM debian:trixie-slim
 
 LABEL org.opencontainers.image.source="https://github.com/sharkusmanch/hermes"
 LABEL org.opencontainers.image.description="iOS-accessible terminal toolbox for k3s"
@@ -9,38 +8,41 @@ LABEL org.opencontainers.image.description="iOS-accessible terminal toolbox for 
 # VERSION PINS - Renovate will auto-update these
 # ============================================================================
 
+# renovate: datasource=github-releases depName=nodejs/node
+ARG NODE_VERSION="22.16.0"
+
 # renovate: datasource=github-releases depName=tsl0922/ttyd
 ARG TTYD_VERSION="1.7.7"
 
 # renovate: datasource=github-releases depName=kubernetes/kubernetes
-ARG KUBECTL_VERSION="1.32.3"
+ARG KUBECTL_VERSION="1.34.3"
 
 # renovate: datasource=github-releases depName=helm/helm
-ARG HELM_VERSION="3.17.3"
+ARG HELM_VERSION="4.0.2"
 
 # renovate: datasource=github-releases depName=derailed/k9s
-ARG K9S_VERSION="0.50.4"
+ARG K9S_VERSION="0.50.16"
 
 # renovate: datasource=github-releases depName=rclone/rclone
-ARG RCLONE_VERSION="1.69.1"
+ARG RCLONE_VERSION="1.72.1"
 
 # renovate: datasource=github-releases depName=fluxcd/flux2
-ARG FLUX_VERSION="2.4.0"
+ARG FLUX_VERSION="2.7.5"
 
 # renovate: datasource=github-releases depName=stern/stern
-ARG STERN_VERSION="1.32.0"
+ARG STERN_VERSION="1.33.1"
 
 # renovate: datasource=github-releases depName=ahmetb/kubectx
 ARG KUBECTX_VERSION="0.9.5"
 
 # renovate: datasource=github-releases depName=mikefarah/yq
-ARG YQ_VERSION="4.45.4"
+ARG YQ_VERSION="4.49.2"
 
 # renovate: datasource=github-releases depName=atuinsh/atuin
-ARG ATUIN_VERSION="18.4.0"
+ARG ATUIN_VERSION="18.10.0"
 
 # renovate: datasource=npm depName=@anthropic-ai/claude-code
-ARG CLAUDE_CODE_VERSION="1.0.16"
+ARG CLAUDE_CODE_VERSION="2.0.65"
 
 # ============================================================================
 # SYSTEM PACKAGES
@@ -63,6 +65,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ncdu \
     tree \
     unzip \
+    xz-utils \
     ca-certificates \
     # Editors
     vim \
@@ -88,6 +91,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # UTF-8 locale (can be overridden at runtime)
 ENV LANG=en_US.UTF-8
 ENV LC_ALL=en_US.UTF-8
+
+# ============================================================================
+# NODE.JS INSTALLATION
+# ============================================================================
+
+RUN curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" \
+    | tar -xJf - -C /usr/local --strip-components=1 \
+    && node --version && npm --version
 
 # ============================================================================
 # TOOL INSTALLATIONS
@@ -145,9 +156,8 @@ RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
 # USER SETUP
 # ============================================================================
 
-# Remove existing node user (UID 1000) and create toolbox user
-RUN userdel -r node 2>/dev/null || true \
-    && useradd -m -s /bin/bash -u 1000 toolbox
+# Create toolbox user
+RUN useradd -m -s /bin/bash -u 1000 toolbox
 
 # Setup bash configuration
 COPY --chown=toolbox:toolbox config/bashrc /home/toolbox/.bashrc
