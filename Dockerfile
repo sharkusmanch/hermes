@@ -1,4 +1,5 @@
 # syntax=docker/dockerfile:1
+# renovate: datasource=docker depName=node versioning=node
 FROM node:22.16.0-bookworm-slim
 
 LABEL org.opencontainers.image.source="https://github.com/sharkusmanch/hermes"

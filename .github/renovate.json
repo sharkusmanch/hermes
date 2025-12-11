@@ -14,12 +14,13 @@
   "rebaseWhen": "conflicted",
   "packageRules": [
     {
-      "description": "Group all hermes Dockerfile updates",
+      "description": "Group all hermes Dockerfile updates (non-major)",
       "matchFileNames": ["Dockerfile"],
+      "matchUpdateTypes": ["minor", "patch"],
       "groupName": "hermes dependencies"
     },
     {
-      "description": "Auto-merge patch updates for CLI tools",
+      "description": "Auto-merge patch updates",
       "matchFileNames": ["Dockerfile"],
       "matchUpdateTypes": ["patch"],
       "automerge": true,
@@ -27,12 +28,32 @@
       "automergeStrategy": "merge"
     },
     {
-      "description": "Auto-merge minor updates for CLI tools",
+      "description": "Auto-merge minor updates",
       "matchFileNames": ["Dockerfile"],
       "matchUpdateTypes": ["minor"],
       "automerge": true,
       "automergeType": "pr",
       "automergeStrategy": "merge"
+    },
+    {
+      "description": "Major updates require manual review",
+      "matchFileNames": ["Dockerfile"],
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "labels": ["major-update"]
+    },
+    {
+      "description": "Node.js - only LTS versions (even major numbers)",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["node"],
+      "allowedVersions": "/^(22|24|26)\\./",
+      "automerge": false
+    },
+    {
+      "description": "Helm - stay on v3.x for now",
+      "matchDatasources": ["github-releases"],
+      "matchPackageNames": ["helm/helm"],
+      "allowedVersions": "< 4.0.0"
     },
     {
       "description": "Group GitHub Actions updates",
