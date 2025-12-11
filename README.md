@@ -1,6 +1,15 @@
 # Hermes
 
-A web-based terminal toolbox for k3s, accessible from iOS via Tailscale.
+A web-based terminal toolbox with Kubernetes tools, shell utilities, and runtime extensibility via Homebrew.
+
+## Features
+
+- **Web Terminal** - Access via browser using ttyd + tmux
+- **Kubernetes Tools** - kubectl, helm, k9s, flux, stern, kubectx/kubens
+- **Developer Utilities** - git, vim, jq, yq, ripgrep, fzf, rclone
+- **AI Assistant** - Claude Code CLI pre-installed
+- **Shell History Sync** - Atuin for cross-session history
+- **Runtime Extensibility** - Install additional tools via Homebrew at startup
 
 ## What's Included
 
@@ -18,17 +27,32 @@ A web-based terminal toolbox for k3s, accessible from iOS via Tailscale.
 | yq | YAML processor |
 | atuin | Shell history sync |
 | claude | Claude Code CLI |
+| brew | Homebrew for runtime package installation |
 
 ## Usage
 
 ```bash
 docker pull ghcr.io/sharkusmanch/hermes:latest
 
-# Run locally
-docker run -it -p 7681:7681 ghcr.io/sharkusmanch/hermes:latest
+# Run with web terminal
+docker run -p 7681:7681 ghcr.io/sharkusmanch/hermes:latest
+
+# Run with additional brew packages
+docker run -p 7681:7681 -e HERMES_BREW_PACKAGES="gh lazygit" ghcr.io/sharkusmanch/hermes:latest
+
+# Run with custom title
+docker run -p 7681:7681 -e HERMES_WINDOW_TITLE="prod-cluster" ghcr.io/sharkusmanch/hermes:latest
 ```
 
 Access at http://localhost:7681
+
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `HERMES_BREW_PACKAGES` | (empty) | Space-separated list of Homebrew packages to install at startup |
+| `HERMES_WINDOW_TITLE` | `HERMES` | Browser window/tab title |
+| `HERMES_PORT` | `7681` | ttyd listen port |
 
 ## Versioning
 
@@ -52,6 +76,20 @@ atuin sync -f
 
 ```bash
 claude login
+```
+
+### Homebrew at Runtime
+
+Mount a Brewfile for automatic package installation:
+
+```bash
+docker run -v ~/.Brewfile:/home/toolbox/.Brewfile ghcr.io/sharkusmanch/hermes:latest
+```
+
+Or use init scripts for custom setup:
+
+```bash
+docker run -v ./my-init.sh:/home/toolbox/.init.d/my-init.sh ghcr.io/sharkusmanch/hermes:latest
 ```
 
 ## Development

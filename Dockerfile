@@ -2,7 +2,7 @@
 FROM debian:trixie-slim
 
 LABEL org.opencontainers.image.source="https://github.com/sharkusmanch/hermes"
-LABEL org.opencontainers.image.description="iOS-accessible terminal toolbox for k3s"
+LABEL org.opencontainers.image.description="Web-based terminal toolbox with Kubernetes tools and runtime extensibility"
 
 # ============================================================================
 # VERSION PINS - Renovate will auto-update these
