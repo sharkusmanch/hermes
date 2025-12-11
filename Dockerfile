@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM node:22.21.1-bookworm-slim
+FROM node:24.12.0-bookworm-slim
 
 LABEL org.opencontainers.image.source="https://github.com/sharkusmanch/hermes"
 LABEL org.opencontainers.image.description="iOS-accessible terminal toolbox for k3s"
@@ -15,7 +15,7 @@ ARG TTYD_VERSION="1.7.7"
 ARG KUBECTL_VERSION="1.34.3"
 
 # renovate: datasource=github-releases depName=helm/helm
-ARG HELM_VERSION="3.19.3"
+ARG HELM_VERSION="4.0.2"
 
 # renovate: datasource=github-releases depName=derailed/k9s
 ARG K9S_VERSION="0.50.16"
@@ -39,7 +39,7 @@ ARG YQ_VERSION="4.49.2"
 ARG ATUIN_VERSION="18.10.0"
 
 # renovate: datasource=npm depName=@anthropic-ai/claude-code
-ARG CLAUDE_CODE_VERSION="1.0.128"
+ARG CLAUDE_CODE_VERSION="2.0.65"
 
 # ============================================================================
 # SYSTEM PACKAGES
