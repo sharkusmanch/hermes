@@ -9,7 +9,7 @@ LABEL org.opencontainers.image.description="Web-based terminal toolbox with Kube
 # ============================================================================
 
 # renovate: datasource=github-releases depName=nodejs/node
-ARG NODE_VERSION="22.16.0"
+ARG NODE_VERSION="22.21.1"
 
 # renovate: datasource=github-releases depName=tsl0922/ttyd
 ARG TTYD_VERSION="1.7.7"
