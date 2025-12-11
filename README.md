@@ -56,6 +56,32 @@ Access at http://localhost:7681
 | `HERMES_THEME` | (empty) | Color theme: `dracula`, `gruvbox-dark`, `nord`, `tokyo-night`, `solarized-dark`, `catppuccin-mocha` |
 | `HERMES_FONT_FAMILY` | (empty) | Terminal font family (e.g., `JetBrains Mono`, `Fira Code`) |
 | `HERMES_FONT_SIZE` | (empty) | Terminal font size in pixels (e.g., `16`) |
+| `HERMES_PERSIST_DISABLE` | (empty) | Set to `true` to disable automatic persist symlinks |
+
+## Persistent Storage (Kubernetes)
+
+When running in Kubernetes with a PVC mounted at `/home/toolbox/persist`, the entrypoint automatically symlinks common config directories to preserve state across pod restarts:
+
+- `~/.claude` - Claude Code credentials
+- `~/.kube` - Kubernetes config
+- `~/.ssh` - SSH keys
+- `~/.config/atuin` - Shell history
+- `~/.local` - Local packages
+- `~/.bash_history` - Bash history
+
+**Example Kubernetes deployment:**
+
+```yaml
+volumeMounts:
+  - name: hermes-data
+    mountPath: /home/toolbox/persist
+volumes:
+  - name: hermes-data
+    persistentVolumeClaim:
+      claimName: hermes-pvc
+```
+
+On first startup, existing config is copied to the PVC. Subsequent restarts will use the persisted data.
 
 ## Versioning
 

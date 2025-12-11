@@ -6,6 +6,62 @@ set -e
 # ============================================================================
 
 THEMES_DIR="/home/toolbox/.config/themes"
+PERSIST_DIR="/home/toolbox/persist"
+
+# ============================================================================
+# PERSISTENT STORAGE SETUP
+# ============================================================================
+# When a PVC is mounted at /home/toolbox/persist, automatically symlink
+# common config directories to preserve state across restarts.
+
+if [[ -d "$PERSIST_DIR" && "${HERMES_PERSIST_DISABLE:-}" != "true" ]]; then
+    echo "Persistent storage detected at $PERSIST_DIR"
+
+    # Directories to persist (relative to $HOME)
+    PERSIST_DIRS=(".claude" ".kube" ".ssh" ".config/atuin" ".local" ".bash_history")
+
+    for dir in "${PERSIST_DIRS[@]}"; do
+        persist_path="$PERSIST_DIR/$dir"
+        home_path="$HOME/$dir"
+
+        # Create parent directories in persist if needed
+        mkdir -p "$(dirname "$persist_path")"
+
+        # Skip if already a symlink
+        if [[ -L "$home_path" ]]; then
+            continue
+        fi
+
+        # If persist path doesn't exist, create it (copy existing if present)
+        if [[ ! -e "$persist_path" ]]; then
+            if [[ -e "$home_path" ]]; then
+                # Copy existing data to persist
+                cp -a "$home_path" "$persist_path"
+            elif [[ "$dir" == *"/"* ]]; then
+                # Nested directory - create as directory
+                mkdir -p "$persist_path"
+            else
+                # Top-level - create as directory
+                mkdir -p "$persist_path"
+            fi
+        fi
+
+        # Remove existing file/dir and create symlink
+        if [[ -e "$home_path" || -L "$home_path" ]]; then
+            rm -rf "$home_path"
+        fi
+
+        # Ensure parent exists
+        mkdir -p "$(dirname "$home_path")"
+
+        ln -sf "$persist_path" "$home_path"
+        echo "  Linked $dir -> persist"
+    done
+fi
+
+# ============================================================================
+# HOMEBREW PACKAGES
+# ============================================================================
 
 # Ensure brew is in PATH
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
@@ -31,7 +87,10 @@ if [[ -f "$HOME/.Brewfile" ]]; then
     echo "Brewfile packages installed successfully"
 fi
 
-# Source any custom init scripts
+# ============================================================================
+# CUSTOM INIT SCRIPTS
+# ============================================================================
+
 if [[ -d "$HOME/.init.d" ]]; then
     for script in "$HOME"/.init.d/*.sh; do
         if [[ -f "$script" ]]; then
@@ -41,7 +100,10 @@ if [[ -d "$HOME/.init.d" ]]; then
     done
 fi
 
-# Build ttyd command with configurable options
+# ============================================================================
+# TTYD CONFIGURATION
+# ============================================================================
+
 if [[ "$1" == "ttyd" ]]; then
     TTYD_ARGS=("-p" "${HERMES_PORT:-7681}")
     TTYD_ARGS+=("-W")
