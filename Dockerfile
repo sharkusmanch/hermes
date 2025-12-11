@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM node:22.16.0-bookworm-slim
+FROM node:22.21.1-bookworm-slim
 
 LABEL org.opencontainers.image.source="https://github.com/sharkusmanch/hermes"
 LABEL org.opencontainers.image.description="iOS-accessible terminal toolbox for k3s"
@@ -12,34 +12,34 @@ LABEL org.opencontainers.image.description="iOS-accessible terminal toolbox for 
 ARG TTYD_VERSION="1.7.7"
 
 # renovate: datasource=github-releases depName=kubernetes/kubernetes
-ARG KUBECTL_VERSION="1.32.3"
+ARG KUBECTL_VERSION="1.34.3"
 
 # renovate: datasource=github-releases depName=helm/helm
-ARG HELM_VERSION="3.17.3"
+ARG HELM_VERSION="3.19.3"
 
 # renovate: datasource=github-releases depName=derailed/k9s
-ARG K9S_VERSION="0.50.4"
+ARG K9S_VERSION="0.50.16"
 
 # renovate: datasource=github-releases depName=rclone/rclone
-ARG RCLONE_VERSION="1.69.1"
+ARG RCLONE_VERSION="1.72.1"
 
 # renovate: datasource=github-releases depName=fluxcd/flux2
-ARG FLUX_VERSION="2.4.0"
+ARG FLUX_VERSION="2.7.5"
 
 # renovate: datasource=github-releases depName=stern/stern
-ARG STERN_VERSION="1.32.0"
+ARG STERN_VERSION="1.33.1"
 
 # renovate: datasource=github-releases depName=ahmetb/kubectx
 ARG KUBECTX_VERSION="0.9.5"
 
 # renovate: datasource=github-releases depName=mikefarah/yq
-ARG YQ_VERSION="4.45.4"
+ARG YQ_VERSION="4.49.2"
 
 # renovate: datasource=github-releases depName=atuinsh/atuin
-ARG ATUIN_VERSION="18.4.0"
+ARG ATUIN_VERSION="18.10.0"
 
 # renovate: datasource=npm depName=@anthropic-ai/claude-code
-ARG CLAUDE_CODE_VERSION="1.0.16"
+ARG CLAUDE_CODE_VERSION="1.0.128"
 
 # ============================================================================
 # SYSTEM PACKAGES
