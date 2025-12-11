@@ -5,59 +5,35 @@ set -e
 # Hermes Entrypoint Script
 # ============================================================================
 
-THEMES_DIR="/home/toolbox/.config/themes"
 PERSIST_DIR="/home/toolbox/persist"
+IMAGE_HOME="/home/toolbox"
 
 # ============================================================================
 # PERSISTENT STORAGE SETUP
 # ============================================================================
-# When a PVC is mounted at /home/toolbox/persist, automatically symlink
-# common config directories to preserve state across restarts.
+# When a PVC is mounted at /home/toolbox/persist, use it as HOME.
+# Essential config files are copied from the image on first run.
 
 if [[ -d "$PERSIST_DIR" && "${HERMES_PERSIST_DISABLE:-}" != "true" ]]; then
     echo "Persistent storage detected at $PERSIST_DIR"
 
-    # Directories to persist (relative to $HOME)
-    PERSIST_DIRS=(".claude" ".kube" ".ssh" ".config/atuin" ".local" ".bash_history")
+    # Bootstrap essential files on first run
+    if [[ ! -f "$PERSIST_DIR/.bashrc" ]]; then
+        echo "First run - copying essential config files..."
+        cp -a "$IMAGE_HOME/.bashrc" "$PERSIST_DIR/"
+        cp -a "$IMAGE_HOME/.tmux.conf" "$PERSIST_DIR/"
+        cp -a "$IMAGE_HOME/.config" "$PERSIST_DIR/"
+        echo "Config files copied to persist"
+    fi
 
-    for dir in "${PERSIST_DIRS[@]}"; do
-        persist_path="$PERSIST_DIR/$dir"
-        home_path="$HOME/$dir"
-
-        # Create parent directories in persist if needed
-        mkdir -p "$(dirname "$persist_path")"
-
-        # Skip if already a symlink
-        if [[ -L "$home_path" ]]; then
-            continue
-        fi
-
-        # If persist path doesn't exist, create it (copy existing if present)
-        if [[ ! -e "$persist_path" ]]; then
-            if [[ -e "$home_path" ]]; then
-                # Copy existing data to persist
-                cp -a "$home_path" "$persist_path"
-            elif [[ "$dir" == *"/"* ]]; then
-                # Nested directory - create as directory
-                mkdir -p "$persist_path"
-            else
-                # Top-level - create as directory
-                mkdir -p "$persist_path"
-            fi
-        fi
-
-        # Remove existing file/dir and create symlink
-        if [[ -e "$home_path" || -L "$home_path" ]]; then
-            rm -rf "$home_path"
-        fi
-
-        # Ensure parent exists
-        mkdir -p "$(dirname "$home_path")"
-
-        ln -sf "$persist_path" "$home_path"
-        echo "  Linked $dir -> persist"
-    done
+    # Use persist as HOME
+    export HOME="$PERSIST_DIR"
+    cd "$HOME"
+    echo "HOME set to $HOME"
 fi
+
+# Theme directory (may be in persist or image home)
+THEMES_DIR="$HOME/.config/themes"
 
 # ============================================================================
 # HOMEBREW PACKAGES
