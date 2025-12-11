@@ -189,9 +189,18 @@ EXPOSE 7681
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:7681/ || exit 1
 
-# BREW_PACKAGES: space-separated list of brew packages to install at startup
-# Example: docker run -e BREW_PACKAGES="gh lazygit" hermes
-ENV BREW_PACKAGES=""
+# ============================================================================
+# HERMES CONFIGURATION (all env vars prefixed with HERMES_)
+# ============================================================================
+# HERMES_BREW_PACKAGES: space-separated list of brew packages to install at startup
+# HERMES_WINDOW_TITLE: browser window/tab title (default: HERMES)
+# HERMES_PORT: ttyd port (default: 7681)
+#
+# Example: docker run -e HERMES_BREW_PACKAGES="gh lazygit" -e HERMES_WINDOW_TITLE="prod-terminal" hermes
+
+ENV HERMES_BREW_PACKAGES=""
+ENV HERMES_WINDOW_TITLE="HERMES"
+ENV HERMES_PORT="7681"
 
 ENTRYPOINT ["/home/toolbox/entrypoint.sh"]
 CMD ["ttyd", "-p", "7681", "-W", "-t", "titleFixed=HERMES", "tmux", "new-session", "-A", "-s", "main"]

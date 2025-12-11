@@ -8,10 +8,10 @@ set -e
 # Ensure brew is in PATH
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 
-# Install brew packages if BREW_PACKAGES is set
-if [[ -n "$BREW_PACKAGES" ]]; then
-    echo "Installing brew packages: $BREW_PACKAGES"
-    for pkg in $BREW_PACKAGES; do
+# Install brew packages if HERMES_BREW_PACKAGES is set
+if [[ -n "$HERMES_BREW_PACKAGES" ]]; then
+    echo "Installing brew packages: $HERMES_BREW_PACKAGES"
+    for pkg in $HERMES_BREW_PACKAGES; do
         if ! brew list "$pkg" &>/dev/null; then
             echo "Installing $pkg..."
             brew install "$pkg"
@@ -39,5 +39,25 @@ if [[ -d "$HOME/.init.d" ]]; then
     done
 fi
 
-# Execute the main command
+# Build ttyd command with configurable options
+if [[ "$1" == "ttyd" ]]; then
+    TTYD_ARGS=("-p" "${HERMES_PORT:-7681}")
+    TTYD_ARGS+=("-W")
+    TTYD_ARGS+=("-t" "titleFixed=${HERMES_WINDOW_TITLE:-HERMES}")
+
+    # Skip past "ttyd" and original options we're overriding
+    shift
+    while [[ "${1:-}" == -* ]]; do
+        case "$1" in
+            -p) shift 2 ;;
+            -W) shift ;;
+            -t) shift 2 ;;
+            *) TTYD_ARGS+=("$1"); shift ;;
+        esac
+    done
+
+    exec ttyd "${TTYD_ARGS[@]}" "$@"
+fi
+
+# Execute other commands as-is
 exec "$@"
