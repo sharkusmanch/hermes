@@ -53,6 +53,9 @@ Access at http://localhost:7681
 | `HERMES_BREW_PACKAGES` | (empty) | Space-separated list of Homebrew packages to install at startup |
 | `HERMES_WINDOW_TITLE` | `HERMES` | Browser window/tab title |
 | `HERMES_PORT` | `7681` | ttyd listen port |
+| `HERMES_THEME` | (empty) | Color theme: `dracula`, `gruvbox-dark`, `nord`, `tokyo-night`, `solarized-dark`, `catppuccin-mocha` |
+| `HERMES_FONT_FAMILY` | (empty) | Terminal font family (e.g., `JetBrains Mono`, `Fira Code`) |
+| `HERMES_FONT_SIZE` | (empty) | Terminal font size in pixels (e.g., `16`) |
 
 ## Versioning
 

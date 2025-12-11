@@ -163,8 +163,10 @@ RUN useradd -m -s /bin/bash -u 1000 toolbox
 COPY --chown=toolbox:toolbox config/bashrc /home/toolbox/.bashrc
 COPY --chown=toolbox:toolbox config/tmux.conf /home/toolbox/.tmux.conf
 
-# Create config directories
-RUN mkdir -p /home/toolbox/.config/atuin && chown -R toolbox:toolbox /home/toolbox/.config
+# Create config directories and copy themes
+RUN mkdir -p /home/toolbox/.config/atuin /home/toolbox/.config/themes \
+    && chown -R toolbox:toolbox /home/toolbox/.config
+COPY --chown=toolbox:toolbox config/themes/ /home/toolbox/.config/themes/
 
 # Create Homebrew directory with proper ownership (must be done as root)
 RUN mkdir -p /home/linuxbrew/.linuxbrew \
@@ -206,12 +208,18 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 # HERMES_BREW_PACKAGES: space-separated list of brew packages to install at startup
 # HERMES_WINDOW_TITLE: browser window/tab title (default: HERMES)
 # HERMES_PORT: ttyd port (default: 7681)
+# HERMES_THEME: color theme (dracula, gruvbox-dark, nord, tokyo-night, solarized-dark, catppuccin-mocha)
+# HERMES_FONT_FAMILY: terminal font family
+# HERMES_FONT_SIZE: terminal font size in pixels
 #
-# Example: docker run -e HERMES_BREW_PACKAGES="gh lazygit" -e HERMES_WINDOW_TITLE="prod-terminal" hermes
+# Example: docker run -e HERMES_THEME="dracula" -e HERMES_FONT_SIZE="16" hermes
 
 ENV HERMES_BREW_PACKAGES=""
 ENV HERMES_WINDOW_TITLE="HERMES"
 ENV HERMES_PORT="7681"
+ENV HERMES_THEME=""
+ENV HERMES_FONT_FAMILY=""
+ENV HERMES_FONT_SIZE=""
 
 ENTRYPOINT ["/home/toolbox/entrypoint.sh"]
 CMD ["ttyd", "-p", "7681", "-W", "-t", "titleFixed=HERMES", "tmux", "new-session", "-A", "-s", "main"]

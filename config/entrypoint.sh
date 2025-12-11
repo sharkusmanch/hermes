@@ -5,6 +5,8 @@ set -e
 # Hermes Entrypoint Script
 # ============================================================================
 
+THEMES_DIR="/home/toolbox/.config/themes"
+
 # Ensure brew is in PATH
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 
@@ -44,6 +46,27 @@ if [[ "$1" == "ttyd" ]]; then
     TTYD_ARGS=("-p" "${HERMES_PORT:-7681}")
     TTYD_ARGS+=("-W")
     TTYD_ARGS+=("-t" "titleFixed=${HERMES_WINDOW_TITLE:-HERMES}")
+
+    # Font configuration
+    if [[ -n "$HERMES_FONT_FAMILY" ]]; then
+        TTYD_ARGS+=("-t" "fontFamily=${HERMES_FONT_FAMILY}")
+    fi
+    if [[ -n "$HERMES_FONT_SIZE" ]]; then
+        TTYD_ARGS+=("-t" "fontSize=${HERMES_FONT_SIZE}")
+    fi
+
+    # Theme configuration
+    if [[ -n "$HERMES_THEME" ]]; then
+        THEME_FILE="${THEMES_DIR}/${HERMES_THEME}.json"
+        if [[ -f "$THEME_FILE" ]]; then
+            # Read theme JSON and compact it (remove newlines)
+            THEME_JSON=$(tr -d '\n' < "$THEME_FILE" | tr -s ' ')
+            TTYD_ARGS+=("-t" "theme=${THEME_JSON}")
+        else
+            echo "Warning: Theme '$HERMES_THEME' not found at $THEME_FILE"
+            echo "Available themes: $(ls -1 "$THEMES_DIR" 2>/dev/null | sed 's/.json$//' | tr '\n' ' ')"
+        fi
+    fi
 
     # Skip past "ttyd" and original options we're overriding
     shift
