@@ -30,10 +30,10 @@ ARG YQ_VERSION="4.49.2"
 ARG ATUIN_VERSION="18.10.0"
 
 # renovate: datasource=github-releases depName=starship/starship
-ARG STARSHIP_VERSION="1.23.0"
+ARG STARSHIP_VERSION="1.24.1"
 
 # renovate: datasource=npm depName=@anthropic-ai/claude-code
-ARG CLAUDE_CODE_VERSION="2.0.65"
+ARG CLAUDE_CODE_VERSION="2.0.67"
 
 # ============================================================================
 # SYSTEM PACKAGES
