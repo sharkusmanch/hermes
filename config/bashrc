@@ -64,7 +64,8 @@ __kube_ps1() {
         echo " [${ctx}:${ns}]"
     fi
 }
-PS1='\[\033[01;32m\]hermes\[\033[00m\]$(__kube_ps1):\[\033[01;34m\]\w\[\033[00m\]\$ '
+__hermes_user="${HERMES_USERNAME:-hermes}"
+PS1='\[\033[01;32m\]${__hermes_user}\[\033[00m\]$(__kube_ps1):\[\033[01;34m\]\w\[\033[00m\]\$ '
 
 # FZF
 [ -f /usr/share/doc/fzf/examples/key-bindings.bash ] && source /usr/share/doc/fzf/examples/key-bindings.bash

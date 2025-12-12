@@ -211,8 +211,9 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 # HERMES_THEME: color theme (dracula, gruvbox-dark, nord, tokyo-night, solarized-dark, catppuccin-mocha)
 # HERMES_FONT_FAMILY: terminal font family
 # HERMES_FONT_SIZE: terminal font size in pixels
+# HERMES_USERNAME: username shown in prompt (default: hermes)
 #
-# Example: docker run -e HERMES_THEME="dracula" -e HERMES_FONT_SIZE="16" hermes
+# Example: docker run -e HERMES_THEME="dracula" -e HERMES_USERNAME="marcus" hermes
 
 ENV HERMES_BREW_PACKAGES=""
 ENV HERMES_WINDOW_TITLE="HERMES"
@@ -220,6 +221,7 @@ ENV HERMES_PORT="7681"
 ENV HERMES_THEME=""
 ENV HERMES_FONT_FAMILY=""
 ENV HERMES_FONT_SIZE=""
+ENV HERMES_USERNAME=""
 
 ENTRYPOINT ["/home/toolbox/entrypoint.sh"]
 CMD ["ttyd", "-p", "7681", "-W", "-t", "titleFixed=HERMES", "tmux", "new-session", "-A", "-s", "main"]
