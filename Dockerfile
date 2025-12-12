@@ -81,6 +81,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Homebrew/system dependencies
     procps \
     file \
+    # Node.js runtime dependency
+    libatomic1 \
     # Locale support (for Unicode/UTF-8)
     locales \
     && rm -rf /var/lib/apt/lists/* \
@@ -155,24 +157,30 @@ RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
 # USER SETUP
 # ============================================================================
 
-# Create toolbox user
-RUN useradd -m -s /bin/bash -u 1000 toolbox
+# Create toolbox user with root group membership (GID 0) for OpenShift compatibility
+# This allows arbitrary UIDs to write to group-writable directories
+RUN useradd -m -s /bin/bash -u 1000 -G root toolbox
 
-# Setup bash configuration
-COPY --chown=toolbox:toolbox config/bashrc /home/toolbox/.bashrc
-COPY --chown=toolbox:toolbox config/tmux.conf /home/toolbox/.tmux.conf
+# Setup bash configuration (owned by toolbox, group root, group-writable)
+COPY --chown=toolbox:root config/bashrc /home/toolbox/.bashrc
+COPY --chown=toolbox:root config/tmux.conf /home/toolbox/.tmux.conf
 
 # Create config directories and copy themes
 RUN mkdir -p /home/toolbox/.config/atuin /home/toolbox/.config/themes \
-    && chown -R toolbox:toolbox /home/toolbox/.config
-COPY --chown=toolbox:toolbox config/themes/ /home/toolbox/.config/themes/
+    && chown -R toolbox:root /home/toolbox/.config
+COPY --chown=toolbox:root config/themes/ /home/toolbox/.config/themes/
+
+# Make home directory group-writable for arbitrary UID support
+RUN chown -R toolbox:root /home/toolbox \
+    && chmod -R g=u /home/toolbox
 
 # Create Homebrew directory with proper ownership (must be done as root)
 RUN mkdir -p /home/linuxbrew/.linuxbrew \
-    && chown -R toolbox:toolbox /home/linuxbrew
+    && chown -R toolbox:root /home/linuxbrew \
+    && chmod -R g=u /home/linuxbrew
 
 # Switch to non-root user
-USER toolbox
+USER 1000
 WORKDIR /home/toolbox
 
 # ============================================================================
@@ -195,7 +203,7 @@ RUN brew analytics off
 # ============================================================================
 
 # Copy entrypoint script
-COPY --chown=toolbox:toolbox config/entrypoint.sh /home/toolbox/entrypoint.sh
+COPY --chown=toolbox:root config/entrypoint.sh /home/toolbox/entrypoint.sh
 RUN chmod +x /home/toolbox/entrypoint.sh
 
 EXPOSE 7681
