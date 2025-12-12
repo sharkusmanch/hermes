@@ -1,0 +1,85 @@
+# Starship configuration for Hermes
+# See: https://starship.rs/config/
+
+# Prompt format
+format = """
+$username\
+$hostname\
+$directory\
+$git_branch\
+$git_status\
+$kubernetes\
+$cmd_duration\
+$line_break\
+$character"""
+
+# Shorter directory path
+[directory]
+truncation_length = 3
+truncate_to_repo = true
+
+# Username - use HERMES_USERNAME if set
+[username]
+style_user = "green bold"
+style_root = "red bold"
+format = "[$user]($style)"
+show_always = true
+
+[hostname]
+ssh_only = false
+format = "@[$hostname](bold blue)"
+disabled = true
+
+# Git branch
+[git_branch]
+symbol = " "
+format = " [$symbol$branch]($style)"
+style = "purple"
+
+# Git status
+[git_status]
+format = '([$all_status$ahead_behind]($style) )'
+style = "red"
+
+# Kubernetes context
+[kubernetes]
+disabled = false
+format = ' [$symbol$context(:$namespace)]($style)'
+symbol = "󱃾 "
+style = "cyan"
+
+# Command duration (show if > 2s)
+[cmd_duration]
+min_time = 2_000
+format = " [$duration]($style)"
+style = "yellow"
+
+# Prompt character
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"
+
+# Disable modules we don't need
+[aws]
+disabled = true
+
+[gcloud]
+disabled = true
+
+[azure]
+disabled = true
+
+[package]
+disabled = true
+
+[nodejs]
+disabled = true
+
+[python]
+disabled = true
+
+[rust]
+disabled = true
+
+[golang]
+disabled = true

@@ -20,26 +20,17 @@ ARG KUBECTL_VERSION="1.34.3"
 # renovate: datasource=github-releases depName=helm/helm
 ARG HELM_VERSION="4.0.2"
 
-# renovate: datasource=github-releases depName=derailed/k9s
-ARG K9S_VERSION="0.50.16"
-
-# renovate: datasource=github-releases depName=rclone/rclone
-ARG RCLONE_VERSION="1.72.1"
-
 # renovate: datasource=github-releases depName=fluxcd/flux2
 ARG FLUX_VERSION="2.7.5"
-
-# renovate: datasource=github-releases depName=stern/stern
-ARG STERN_VERSION="1.33.1"
-
-# renovate: datasource=github-releases depName=ahmetb/kubectx
-ARG KUBECTX_VERSION="0.9.5"
 
 # renovate: datasource=github-releases depName=mikefarah/yq
 ARG YQ_VERSION="4.49.2"
 
 # renovate: datasource=github-releases depName=atuinsh/atuin
 ARG ATUIN_VERSION="18.10.0"
+
+# renovate: datasource=github-releases depName=starship/starship
+ARG STARSHIP_VERSION="1.23.0"
 
 # renovate: datasource=npm depName=@anthropic-ai/claude-code
 ARG CLAUDE_CODE_VERSION="2.0.65"
@@ -53,7 +44,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # Terminal
     tmux \
-    # Shell utilities
+    # Shells
+    zsh \
     bash-completion \
     curl \
     wget \
@@ -117,30 +109,9 @@ RUN curl -fsSL "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/amd64/ku
 RUN curl -fsSL "https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz" \
     | tar -xzf - --strip-components=1 -C /usr/local/bin linux-amd64/helm
 
-# k9s
-RUN curl -fsSL "https://github.com/derailed/k9s/releases/download/v${K9S_VERSION}/k9s_Linux_amd64.tar.gz" \
-    | tar -xzf - -C /usr/local/bin k9s
-
-# rclone
-RUN curl -fsSL "https://downloads.rclone.org/v${RCLONE_VERSION}/rclone-v${RCLONE_VERSION}-linux-amd64.zip" \
-    -o /tmp/rclone.zip \
-    && unzip -j /tmp/rclone.zip "*/rclone" -d /usr/local/bin \
-    && rm /tmp/rclone.zip \
-    && chmod +x /usr/local/bin/rclone
-
 # flux CLI
 RUN curl -fsSL "https://github.com/fluxcd/flux2/releases/download/v${FLUX_VERSION}/flux_${FLUX_VERSION}_linux_amd64.tar.gz" \
     | tar -xzf - -C /usr/local/bin flux
-
-# stern - multi-pod log tailing
-RUN curl -fsSL "https://github.com/stern/stern/releases/download/v${STERN_VERSION}/stern_${STERN_VERSION}_linux_amd64.tar.gz" \
-    | tar -xzf - -C /usr/local/bin stern
-
-# kubectx + kubens
-RUN curl -fsSL "https://github.com/ahmetb/kubectx/releases/download/v${KUBECTX_VERSION}/kubectx_v${KUBECTX_VERSION}_linux_x86_64.tar.gz" \
-    | tar -xzf - -C /usr/local/bin kubectx \
-    && curl -fsSL "https://github.com/ahmetb/kubectx/releases/download/v${KUBECTX_VERSION}/kubens_v${KUBECTX_VERSION}_linux_x86_64.tar.gz" \
-    | tar -xzf - -C /usr/local/bin kubens
 
 # yq - YAML processor
 RUN curl -fsSL "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64" \
@@ -149,6 +120,10 @@ RUN curl -fsSL "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}
 # Atuin - shell history sync
 RUN curl -fsSL "https://github.com/atuinsh/atuin/releases/download/v${ATUIN_VERSION}/atuin-x86_64-unknown-linux-musl.tar.gz" \
     | tar -xzf - -C /usr/local/bin --strip-components=1 atuin-x86_64-unknown-linux-musl/atuin
+
+# Starship - cross-shell prompt
+RUN curl -fsSL "https://github.com/starship/starship/releases/download/v${STARSHIP_VERSION}/starship-x86_64-unknown-linux-musl.tar.gz" \
+    | tar -xzf - -C /usr/local/bin starship
 
 # Claude Code CLI
 RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
@@ -159,16 +134,18 @@ RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
 
 # Create toolbox user with root group membership (GID 0) for OpenShift compatibility
 # This allows arbitrary UIDs to write to group-writable directories
-RUN useradd -m -s /bin/bash -u 1000 -G root toolbox
+RUN useradd -m -s /bin/zsh -u 1000 -G root toolbox
 
-# Setup bash configuration (owned by toolbox, group root, group-writable)
+# Setup shell configuration (owned by toolbox, group root, group-writable)
+COPY --chown=toolbox:root config/zshrc /home/toolbox/.zshrc
 COPY --chown=toolbox:root config/bashrc /home/toolbox/.bashrc
 COPY --chown=toolbox:root config/tmux.conf /home/toolbox/.tmux.conf
 
-# Create config directories and copy themes
+# Create config directories and copy themes + starship config
 RUN mkdir -p /home/toolbox/.config/atuin /home/toolbox/.config/themes \
     && chown -R toolbox:root /home/toolbox/.config
 COPY --chown=toolbox:root config/themes/ /home/toolbox/.config/themes/
+COPY --chown=toolbox:root config/starship.toml /home/toolbox/.config/starship.toml
 
 # Make home directory group-writable for arbitrary UID support
 RUN chown -R toolbox:root /home/toolbox \
@@ -238,4 +215,4 @@ ENV HERMES_BASIC_AUTH_USER=""
 ENV HERMES_BASIC_AUTH_PASS=""
 
 ENTRYPOINT ["/home/toolbox/entrypoint.sh"]
-CMD ["ttyd", "-p", "7681", "-W", "-t", "titleFixed=HERMES", "tmux", "new-session", "-A", "-s", "main"]
+CMD ["ttyd", "tmux", "new-session", "-A", "-s", "main"]

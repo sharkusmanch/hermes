@@ -1,10 +1,7 @@
-# ~/.bashrc for hermes toolbox
+# ~/.zshrc for hermes toolbox
 
 # If not running interactively, don't do anything
-case $- in
-    *i*) ;;
-      *) return;;
-esac
+[[ $- != *i* ]] && return
 
 # ============================================================================
 # HOMEBREW
@@ -13,20 +10,39 @@ if [[ -d "/home/linuxbrew/.linuxbrew" ]]; then
     eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 fi
 
-# History (legacy - atuin takes over but keep as fallback)
-HISTCONTROL=ignoreboth
+# ============================================================================
+# ZSH OPTIONS
+# ============================================================================
+setopt HIST_IGNORE_DUPS
+setopt HIST_IGNORE_SPACE
+setopt SHARE_HISTORY
+setopt AUTO_CD
+setopt CORRECT
+
 HISTSIZE=10000
-HISTFILESIZE=20000
-shopt -s histappend
+SAVEHIST=20000
+HISTFILE=~/.zsh_history
 
-# Check window size after each command
-shopt -s checkwinsize
+# ============================================================================
+# COMPLETION
+# ============================================================================
+autoload -Uz compinit
+compinit
 
-# Enable color support
+# kubectl completion
+source <(kubectl completion zsh)
+
+# helm completion
+source <(helm completion zsh)
+
+# flux completion
+source <(flux completion zsh)
+
+# ============================================================================
+# ALIASES
+# ============================================================================
 alias ls='ls --color=auto'
 alias grep='grep --color=auto'
-
-# Useful aliases
 alias ll='ls -alF'
 alias la='ls -A'
 alias l='ls -CF'
@@ -36,25 +52,22 @@ alias kgs='kubectl get svc'
 alias kga='kubectl get all'
 alias watch='watch '
 
-# kubectl completion
-source <(kubectl completion bash)
-complete -F __start_kubectl k
+# Claude Code
+alias cc='claude'
+alias ccc='claude --continue'
 
-# helm completion
-source <(helm completion bash)
-
-# flux completion
-source <(flux completion bash)
-
+# ============================================================================
 # FZF
-[ -f /usr/share/doc/fzf/examples/key-bindings.bash ] && source /usr/share/doc/fzf/examples/key-bindings.bash
+# ============================================================================
+[ -f /usr/share/doc/fzf/examples/key-bindings.zsh ] && source /usr/share/doc/fzf/examples/key-bindings.zsh
+[ -f /usr/share/doc/fzf/examples/completion.zsh ] && source /usr/share/doc/fzf/examples/completion.zsh
 
 # ============================================================================
 # ATUIN - Shell History Sync
 # ============================================================================
 if command -v atuin &> /dev/null; then
     if [[ -f "$HOME/.config/atuin/config.toml" ]]; then
-        eval "$(atuin init bash)"
+        eval "$(atuin init zsh)"
     else
         echo "Atuin not configured. Run 'atuin-setup' to configure."
     fi
@@ -100,17 +113,11 @@ EOF
     echo "  New account:  atuin register -u <username> -e <email>"
     echo "  Existing:     atuin login -u <username>"
     echo ""
-    echo "Then restart your shell or run: eval \"\$(atuin init bash)\""
+    echo "Then restart your shell or run: eval \"\$(atuin init zsh)\""
 }
 
 # ============================================================================
-# Claude Code convenience
-# ============================================================================
-alias cc='claude'
-alias ccc='claude --continue'
-
-# ============================================================================
-# Kubernetes helpers
+# KUBERNETES HELPERS
 # ============================================================================
 
 # Quick pod logs
@@ -133,4 +140,4 @@ kall() {
 # ============================================================================
 # STARSHIP PROMPT
 # ============================================================================
-eval "$(starship init bash)"
+eval "$(starship init zsh)"

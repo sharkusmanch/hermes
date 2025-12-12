@@ -18,8 +18,9 @@ if [[ -d "$PERSIST_DIR" && "${HERMES_PERSIST_DISABLE:-}" != "true" ]]; then
     echo "Persistent storage detected at $PERSIST_DIR"
 
     # Bootstrap essential files on first run
-    if [[ ! -f "$PERSIST_DIR/.bashrc" ]]; then
+    if [[ ! -f "$PERSIST_DIR/.zshrc" ]]; then
         echo "First run - copying essential config files..."
+        cp -a "$IMAGE_HOME/.zshrc" "$PERSIST_DIR/"
         cp -a "$IMAGE_HOME/.bashrc" "$PERSIST_DIR/"
         cp -a "$IMAGE_HOME/.tmux.conf" "$PERSIST_DIR/"
         cp -a "$IMAGE_HOME/.config" "$PERSIST_DIR/"
