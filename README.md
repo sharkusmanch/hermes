@@ -58,6 +58,8 @@ Access at http://localhost:7681
 | `HERMES_FONT_SIZE` | (empty) | Terminal font size in pixels (e.g., `16`) |
 | `HERMES_PERSIST_DISABLE` | (empty) | Set to `true` to disable automatic HOME redirection |
 | `HERMES_USERNAME` | `hermes` | Username shown in shell prompt |
+| `HERMES_BASIC_AUTH_USER` | (empty) | Basic auth username (requires `HERMES_BASIC_AUTH_PASS`) |
+| `HERMES_BASIC_AUTH_PASS` | (empty) | Basic auth password (requires `HERMES_BASIC_AUTH_USER`) |
 
 ## Persistent Storage (Kubernetes)
 
@@ -124,6 +126,26 @@ docker build -t hermes:dev .
 # Run with shell
 docker run -it hermes:dev bash
 ```
+
+## Security Considerations
+
+### Authentication
+
+By default, ttyd runs without authentication. If exposing Hermes outside a trusted network, either:
+- Set `HERMES_BASIC_AUTH_USER` and `HERMES_BASIC_AUTH_PASS` for basic authentication
+- Place behind an authentication proxy (oauth2-proxy, Authelia, etc.)
+
+### Init Scripts
+
+The entrypoint automatically sources all `.sh` files in `~/.init.d/` at container startup. This is intentional for extensibility, but be aware:
+
+- **Only mount init scripts from trusted sources**
+- Scripts execute with full user privileges before the shell starts
+- When using persistent storage, ensure the volume is not writable by untrusted parties
+
+### Network Exposure
+
+Hermes is designed for use within trusted networks (private clusters, VPNs, tailnets). Avoid exposing port 7681 directly to the public internet without additional authentication layers.
 
 ## Tool Versions
 

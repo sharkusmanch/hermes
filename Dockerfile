@@ -78,8 +78,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Python (for misc scripts)
     python3 \
     python3-pip \
-    # Homebrew dependencies
-    build-essential \
+    # Homebrew/system dependencies
     procps \
     file \
     # Locale support (for Unicode/UTF-8)
@@ -180,8 +179,10 @@ WORKDIR /home/toolbox
 # HOMEBREW (as non-root user)
 # ============================================================================
 
-# Install Homebrew (directory already created with proper permissions)
-RUN NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+# Install Homebrew (pinned to specific commit for supply chain security)
+# To update: curl -s "https://api.github.com/repos/Homebrew/install/commits/HEAD" | jq -r '.sha'
+ARG HOMEBREW_INSTALL_COMMIT="b45f3d7ffb7aa2992976c154b7f645c86f483d91"
+RUN NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/${HOMEBREW_INSTALL_COMMIT}/install.sh)"
 
 # Add brew to PATH for subsequent commands
 ENV PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:${PATH}"
@@ -212,8 +213,11 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 # HERMES_FONT_FAMILY: terminal font family
 # HERMES_FONT_SIZE: terminal font size in pixels
 # HERMES_USERNAME: username shown in prompt (default: hermes)
+# HERMES_BASIC_AUTH_USER: basic auth username (optional, requires HERMES_BASIC_AUTH_PASS)
+# HERMES_BASIC_AUTH_PASS: basic auth password (optional, requires HERMES_BASIC_AUTH_USER)
 #
 # Example: docker run -e HERMES_THEME="dracula" -e HERMES_USERNAME="marcus" hermes
+# Example with auth: docker run -e HERMES_BASIC_AUTH_USER="admin" -e HERMES_BASIC_AUTH_PASS="secret" hermes
 
 ENV HERMES_BREW_PACKAGES=""
 ENV HERMES_WINDOW_TITLE="HERMES"
@@ -222,6 +226,8 @@ ENV HERMES_THEME=""
 ENV HERMES_FONT_FAMILY=""
 ENV HERMES_FONT_SIZE=""
 ENV HERMES_USERNAME=""
+ENV HERMES_BASIC_AUTH_USER=""
+ENV HERMES_BASIC_AUTH_PASS=""
 
 ENTRYPOINT ["/home/toolbox/entrypoint.sh"]
 CMD ["ttyd", "-p", "7681", "-W", "-t", "titleFixed=HERMES", "tmux", "new-session", "-A", "-s", "main"]

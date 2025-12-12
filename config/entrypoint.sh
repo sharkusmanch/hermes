@@ -85,6 +85,11 @@ if [[ "$1" == "ttyd" ]]; then
     TTYD_ARGS+=("-W")
     TTYD_ARGS+=("-t" "titleFixed=${HERMES_WINDOW_TITLE:-HERMES}")
 
+    # Basic authentication (optional, requires both user and pass)
+    if [[ -n "$HERMES_BASIC_AUTH_USER" && -n "$HERMES_BASIC_AUTH_PASS" ]]; then
+        TTYD_ARGS+=("-c" "${HERMES_BASIC_AUTH_USER}:${HERMES_BASIC_AUTH_PASS}")
+    fi
+
     # Font configuration
     if [[ -n "$HERMES_FONT_FAMILY" ]]; then
         TTYD_ARGS+=("-t" "fontFamily=${HERMES_FONT_FAMILY}")
