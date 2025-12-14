@@ -24,7 +24,7 @@ ARG HELM_VERSION="4.0.2"
 ARG FLUX_VERSION="2.7.5"
 
 # renovate: datasource=github-releases depName=mikefarah/yq
-ARG YQ_VERSION="4.49.2"
+ARG YQ_VERSION="4.50.1"
 
 # renovate: datasource=github-releases depName=atuinsh/atuin
 ARG ATUIN_VERSION="18.10.0"
