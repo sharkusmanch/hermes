@@ -15,7 +15,7 @@ ARG NODE_VERSION="25.2.1"
 ARG TTYD_VERSION="1.7.7"
 
 # renovate: datasource=github-releases depName=kubernetes/kubernetes
-ARG KUBECTL_VERSION="1.34.3"
+ARG KUBECTL_VERSION="1.35.0"
 
 # renovate: datasource=github-releases depName=helm/helm
 ARG HELM_VERSION="4.0.2"
@@ -33,7 +33,7 @@ ARG ATUIN_VERSION="18.10.0"
 ARG STARSHIP_VERSION="1.24.1"
 
 # renovate: datasource=npm depName=@anthropic-ai/claude-code
-ARG CLAUDE_CODE_VERSION="2.0.71"
+ARG CLAUDE_CODE_VERSION="2.0.72"
 
 # ============================================================================
 # SYSTEM PACKAGES
