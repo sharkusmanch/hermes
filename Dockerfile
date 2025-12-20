@@ -33,7 +33,7 @@ ARG ATUIN_VERSION="18.10.0"
 ARG STARSHIP_VERSION="1.24.1"
 
 # renovate: datasource=npm depName=@anthropic-ai/claude-code
-ARG CLAUDE_CODE_VERSION="2.0.73"
+ARG CLAUDE_CODE_VERSION="2.0.74"
 
 # ============================================================================
 # SYSTEM PACKAGES
