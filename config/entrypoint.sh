@@ -84,6 +84,11 @@ fi
 if [[ "$1" == "ttyd" ]]; then
     TTYD_ARGS=("-p" "${HERMES_PORT:-7681}")
     TTYD_ARGS+=("-W")
+
+    # Use custom HTML for iOS Safari copy-paste improvements
+    if [[ -f "$HOME/.config/index.html" ]]; then
+        TTYD_ARGS+=("-I" "$HOME/.config/index.html")
+    fi
     TTYD_ARGS+=("-t" "titleFixed=${HERMES_WINDOW_TITLE:-HERMES}")
 
     # Basic authentication (optional, requires both user and pass)

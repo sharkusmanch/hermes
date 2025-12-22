@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Hermes Terminal</title>
+    <style>
+        /* Reset and base styles */
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            background: #1e1e1e;
+        }
+
+        /* Terminal container */
+        #terminal-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+        }
+
+        #terminal {
+            height: 100%;
+            width: 100%;
+        }
+
+        /* iOS Safari copy-paste improvements */
+        .xterm {
+            -webkit-user-select: text !important;
+            user-select: text !important;
+            -webkit-touch-callout: default !important;
+        }
+
+        .xterm-viewport {
+            -webkit-user-select: text !important;
+            user-select: text !important;
+            -webkit-touch-callout: default !important;
+            /* Improve scroll behavior on iOS */
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .xterm-screen {
+            -webkit-user-select: text !important;
+            user-select: text !important;
+        }
+
+        /* Copy button for iOS */
+        #copy-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: rgba(80, 80, 80, 0.9);
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            transition: transform 0.2s, background 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #copy-button:active {
+            transform: scale(0.95);
+            background: rgba(100, 100, 100, 0.95);
+        }
+
+        #copy-button.visible {
+            display: flex;
+        }
+
+        #copy-button.copied {
+            background: rgba(76, 175, 80, 0.9);
+        }
+
+        /* Toast notification */
+        #toast {
+            position: fixed;
+            bottom: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(50, 50, 50, 0.95);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 14px;
+            z-index: 1001;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        #toast.visible {
+            opacity: 1;
+        }
+
+        /* Selection helper hint */
+        #selection-hint {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(50, 50, 50, 0.9);
+            color: #ccc;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 12px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.5s;
+            pointer-events: none;
+        }
+
+        #selection-hint.visible {
+            opacity: 1;
+        }
+    </style>
+    <link rel="stylesheet" href="./xterm.css">
+</head>
+<body>
+    <div id="terminal-container">
+        <div id="terminal"></div>
+    </div>
+
+    <!-- Copy button for iOS touch devices -->
+    <button id="copy-button" aria-label="Copy selection">📋</button>
+
+    <!-- Toast notification -->
+    <div id="toast"></div>
+
+    <!-- Selection hint for mobile users -->
+    <div id="selection-hint">Long-press and drag to select text</div>
+
+    <script src="./xterm.js"></script>
+    <script src="./xterm-addon-fit.js"></script>
+    <script src="./xterm-addon-web-links.js"></script>
+    <script src="./xterm-addon-image.js"></script>
+    <script src="./xterm-addon-unicode11.js"></script>
+    <script src="./overlay.js"></script>
+    <script>
+        (function() {
+            'use strict';
+
+            // Detect iOS Safari
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+            // UI Elements
+            const copyButton = document.getElementById('copy-button');
+            const toast = document.getElementById('toast');
+            const selectionHint = document.getElementById('selection-hint');
+
+            // Terminal setup
+            const terminalContainer = document.getElementById('terminal');
+
+            // Parse client options from ttyd
+            function parseOptions() {
+                const defaultOptions = {
+                    fontSize: 14,
+                    fontFamily: '"Cascadia Code", Menlo, "DejaVu Sans Mono", "Lucida Console", monospace',
+                    theme: {
+                        background: '#1e1e1e',
+                        foreground: '#d4d4d4'
+                    },
+                    allowProposedApi: true,
+                    scrollback: 10000,
+                    cursorBlink: true
+                };
+
+                // ttyd passes options via window.tty_auth_token and other globals
+                if (window.term_options) {
+                    return Object.assign(defaultOptions, window.term_options);
+                }
+                return defaultOptions;
+            }
+
+            // Show toast message
+            function showToast(message, duration = 2000) {
+                toast.textContent = message;
+                toast.classList.add('visible');
+                setTimeout(() => {
+                    toast.classList.remove('visible');
+                }, duration);
+            }
+
+            // Copy selected text to clipboard
+            async function copySelection() {
+                if (!window.term) return;
+
+                const selection = window.term.getSelection();
+                if (!selection) {
+                    showToast('No text selected');
+                    return;
+                }
+
+                try {
+                    await navigator.clipboard.writeText(selection);
+                    copyButton.classList.add('copied');
+                    showToast('Copied to clipboard!');
+                    setTimeout(() => {
+                        copyButton.classList.remove('copied');
+                    }, 1000);
+                } catch (err) {
+                    // Fallback for older browsers
+                    const textArea = document.createElement('textarea');
+                    textArea.value = selection;
+                    textArea.style.position = 'fixed';
+                    textArea.style.left = '-9999px';
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    try {
+                        document.execCommand('copy');
+                        showToast('Copied to clipboard!');
+                        copyButton.classList.add('copied');
+                        setTimeout(() => {
+                            copyButton.classList.remove('copied');
+                        }, 1000);
+                    } catch (e) {
+                        showToast('Copy failed - try manual copy');
+                    }
+                    document.body.removeChild(textArea);
+                }
+            }
+
+            // Initialize terminal
+            function initTerminal() {
+                const options = parseOptions();
+
+                // Create terminal with iOS-optimized settings
+                const term = new Terminal(Object.assign(options, {
+                    // Enable scrolling on touch
+                    scrollOnUserInput: true,
+                    // Better touch handling
+                    rightClickSelectsWord: false,
+                    // Allow selection on iOS
+                    screenReaderMode: false
+                }));
+
+                window.term = term;
+
+                // Load addons
+                const fitAddon = new FitAddon.FitAddon();
+                term.loadAddon(fitAddon);
+
+                const webLinksAddon = new WebLinksAddon.WebLinksAddon();
+                term.loadAddon(webLinksAddon);
+
+                if (window.ImageAddon) {
+                    const imageAddon = new ImageAddon.ImageAddon();
+                    term.loadAddon(imageAddon);
+                }
+
+                if (window.Unicode11Addon) {
+                    const unicode11Addon = new Unicode11Addon.Unicode11Addon();
+                    term.loadAddon(unicode11Addon);
+                    term.unicode.activeVersion = '11';
+                }
+
+                // Open terminal
+                term.open(terminalContainer);
+                fitAddon.fit();
+
+                // Handle selection changes for copy button visibility
+                term.onSelectionChange(() => {
+                    const hasSelection = term.hasSelection();
+                    if (isTouchDevice) {
+                        if (hasSelection) {
+                            copyButton.classList.add('visible');
+                        } else {
+                            setTimeout(() => {
+                                if (!term.hasSelection()) {
+                                    copyButton.classList.remove('visible');
+                                }
+                            }, 100);
+                        }
+                    }
+                });
+
+                // Handle window resize
+                window.addEventListener('resize', () => {
+                    fitAddon.fit();
+                });
+
+                // Double-tap to select word on iOS
+                let lastTap = 0;
+                if (isIOS) {
+                    terminalContainer.addEventListener('touchend', (e) => {
+                        const now = Date.now();
+                        if (now - lastTap < 300) {
+                            // Double tap detected - handled by xterm.js
+                        }
+                        lastTap = now;
+                    }, { passive: true });
+                }
+
+                // Connect to ttyd WebSocket
+                connectToTTYD(term, fitAddon);
+
+                return term;
+            }
+
+            // Connect to ttyd backend
+            function connectToTTYD(term, fitAddon) {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${protocol}//${window.location.host}${window.location.pathname}ws`;
+
+                const ws = new WebSocket(wsUrl, ['tty']);
+
+                ws.binaryType = 'arraybuffer';
+
+                ws.onopen = () => {
+                    console.log('Connected to ttyd');
+
+                    // Send initial size
+                    const size = { cols: term.cols, rows: term.rows };
+                    ws.send('1' + JSON.stringify(size));
+
+                    // Show hint for touch users
+                    if (isTouchDevice && isIOS) {
+                        selectionHint.classList.add('visible');
+                        setTimeout(() => {
+                            selectionHint.classList.remove('visible');
+                        }, 4000);
+                    }
+                };
+
+                ws.onmessage = (event) => {
+                    const data = event.data;
+                    if (typeof data === 'string') {
+                        // Command from server
+                        const cmd = data[0];
+                        const payload = data.slice(1);
+
+                        switch (cmd) {
+                            case '0': // Output
+                                term.write(payload);
+                                break;
+                            case '1': // Set window title
+                                document.title = payload;
+                                break;
+                            case '2': // Set preferences
+                                try {
+                                    const prefs = JSON.parse(payload);
+                                    if (prefs.fontSize) term.options.fontSize = prefs.fontSize;
+                                    if (prefs.fontFamily) term.options.fontFamily = prefs.fontFamily;
+                                    if (prefs.theme) term.options.theme = prefs.theme;
+                                    fitAddon.fit();
+                                } catch (e) {}
+                                break;
+                        }
+                    } else {
+                        // Binary output
+                        term.write(new Uint8Array(data));
+                    }
+                };
+
+                ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    term.write('\r\n\x1b[31mConnection error\x1b[0m\r\n');
+                };
+
+                ws.onclose = () => {
+                    console.log('Disconnected from ttyd');
+                    term.write('\r\n\x1b[33mDisconnected. Refresh to reconnect.\x1b[0m\r\n');
+                };
+
+                // Send input to server
+                term.onData((data) => {
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.send('0' + data);
+                    }
+                });
+
+                // Send resize events
+                term.onResize((size) => {
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.send('1' + JSON.stringify({ cols: size.cols, rows: size.rows }));
+                    }
+                });
+
+                // Handle binary data
+                term.onBinary((data) => {
+                    if (ws.readyState === WebSocket.OPEN) {
+                        const buffer = new Uint8Array(data.length);
+                        for (let i = 0; i < data.length; i++) {
+                            buffer[i] = data.charCodeAt(i) & 0xff;
+                        }
+                        ws.send(buffer);
+                    }
+                });
+            }
+
+            // Copy button click handler
+            copyButton.addEventListener('click', copySelection);
+
+            // Keyboard shortcut for copy (Cmd+C on Mac, Ctrl+C when text is selected)
+            document.addEventListener('keydown', (e) => {
+                if ((e.metaKey || e.ctrlKey) && e.key === 'c') {
+                    if (window.term && window.term.hasSelection()) {
+                        e.preventDefault();
+                        copySelection();
+                    }
+                }
+            });
+
+            // Initialize when DOM is ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initTerminal);
+            } else {
+                initTerminal();
+            }
+        })();
+    </script>
+</body>
+</html>

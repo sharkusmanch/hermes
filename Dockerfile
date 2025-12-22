@@ -141,11 +141,12 @@ COPY --chown=toolbox:root config/zshrc /home/toolbox/.zshrc
 COPY --chown=toolbox:root config/bashrc /home/toolbox/.bashrc
 COPY --chown=toolbox:root config/tmux.conf /home/toolbox/.tmux.conf
 
-# Create config directories and copy themes + starship config
+# Create config directories and copy themes + starship config + custom HTML
 RUN mkdir -p /home/toolbox/.config/atuin /home/toolbox/.config/themes \
     && chown -R toolbox:root /home/toolbox/.config
 COPY --chown=toolbox:root config/themes/ /home/toolbox/.config/themes/
 COPY --chown=toolbox:root config/starship.toml /home/toolbox/.config/starship.toml
+COPY --chown=toolbox:root config/index.html /home/toolbox/.config/index.html
 
 # Make home directory group-writable for arbitrary UID support
 RUN chown -R toolbox:root /home/toolbox \
